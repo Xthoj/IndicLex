@@ -35,12 +35,16 @@ document.addEventListener("DOMContentLoaded", function () {
   const savedTheme = getCookie("theme");
   if (savedTheme === "dark") {
     document.body.classList.add("dark");
+    toggle.check = true;
   }
 });
 
-document.getElementById("theme-toggle").addEventListener("click", function () {
-  document.body.classList.toggle("dark");
-
-  const currentTheme = document.body.classList.contains("dark") ? "dark" : "light";
-  setCookie("theme", currentTheme, 365); // Save for 1 year
+document.getElementById("theme-toggle").addEventListener("change", function () {
+  if (this.checked) {
+    document.body.classList.add("dark");
+    setCookie("theme", "dark", 365);
+  } else {
+    document.body.classList.remove("dark");
+    setCookie("theme", "light", 365);
+  }
 });

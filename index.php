@@ -17,27 +17,38 @@
 <body>
 
 <header class="sticky-bg">
-    <nav>
-      <div class="nav-links">
-        <i class="fa fa-bars" onclick="toggleMenu()"></i>
-        <a href="#" class="hero-link">IndicLex</a>
-        <div id="nav-links-sub">
-          <ul>
-            <li><a href="catalog.php">Catalog</a></li>
-            <li><a href="search.php">Search</a></li>
-            <li><a href="preferences.php">Preferences</a></li>
-            <button id="theme-toggle">Toggle Theme</button>
+     <nav>
+    <div class="nav-links">
 
-          </ul>
-        </div>
+      <i class="fa fa-bars" onclick="toggleMenu()"></i>
+
+      <a href="#" class="hero-link">IndicLex</a>
+
+      <div id="nav-links-sub">
+        <ul>
+          <li><a href="catalog.php">Catalog</a></li>
+          <li><a href="search.php">Search</a></li>
+          <li><a href="preferences.php">Preferences</a></li>
+        </ul>
       </div>
-    </nav>
+
+      <!-- RIGHT SIDE BUTTONS -->
+      <div class="nav-right">
+        <label class="theme-switch">
+    <input type="checkbox" id="theme-toggle">
+    <span class="slider"></span>
+    </label>
+        <a href="login.php" class="sign-in-btn">Sign In</a>
+      </div>
+
+    </div>
+  </nav>
   </header> 
 
 
   <div class="hero-image">
     <div class="hero-text">
-      <h1>IndicLex</h1>
+      <h1>IndicLexs</h1>
     </div>
   </div>
 
