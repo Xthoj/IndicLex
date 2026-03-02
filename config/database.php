@@ -1,8 +1,8 @@
 <?php
 $host = "localhost";
 $dbname = "indiclex_db";
-$username = "indiclex_user";   // new user
-$password = "indiclex123";     // password you just set
+$username = "root";   // new user
+$password = "";     // password you just set
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", 

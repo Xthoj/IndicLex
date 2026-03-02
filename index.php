@@ -89,7 +89,9 @@
 </section>
 
 <div class="footer">
-  <p>Footer</p>
+  <div class="footer-content">
+    <p>© 2026 IndicLex. All rights reserved. Developed by Team Dolphins</p>
+  </div>
 </div>
 <script src="script.js"></script>
 </body>

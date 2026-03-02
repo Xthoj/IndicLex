@@ -4,6 +4,7 @@
     font-family: "Poppins", sans-serif;
     scroll-behavior: smooth;
     box-sizing: border-box;
+    transition: background-color 0.3s ease;
 }
 :root {
   --bg: white;
@@ -43,7 +44,6 @@ body {
 /* NAV BAR */
 nav {
   background-color: var(--nav-bg);
-  transition: background-color 0.3s ease;
 }
 
 .nav-links {
@@ -271,5 +271,8 @@ input:checked + .slider:before {
   width: 100%;
   background-color: var(--footer-bg);
   color: var(--text);
-  text-align: center;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
