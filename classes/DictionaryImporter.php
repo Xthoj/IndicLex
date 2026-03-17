@@ -179,31 +179,34 @@ class DictionaryImporter {
         ?string $lang_3,
         bool $is_trilingual
     ): array {
-
-        // Try to find existing by name
+ 
+        // Create a slug-style identifier first
+        $identifier = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name));
+        $identifier = trim($identifier, '-');
+ 
+        // Also try slug without the '-dictionary' suffix (matches pre-existing DB entries)
+        $identifier_short = preg_replace('/-dictionary$/', '', $identifier);
+ 
+        // Try to find existing by slug identifier (check both with and without -dictionary suffix)
         $stmt = $this->conn->prepare(
-            "SELECT dict_id FROM dictionaries WHERE name = :name LIMIT 1"
+            "SELECT dict_id FROM dictionaries WHERE dict_identifier IN (:id1, :id2) LIMIT 1"
         );
-        $stmt->execute([':name' => $name]);
+        $stmt->execute([':id1' => $identifier, ':id2' => $identifier_short]);
         $existing = $stmt->fetchColumn();
-
+ 
         if ($existing) {
             return [(int)$existing, false];
         }
-
-        // Create a slug-style identifier
-        $identifier = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name));
-        $identifier = trim($identifier, '-');
-
+ 
         // Make identifier unique if needed
         $base = $identifier;
         $n    = 1;
         while ($this->identifierExists($identifier)) {
             $identifier = $base . '-' . $n++;
         }
-
+ 
         $type = $is_trilingual ? 'trilingual' : 'bilingual';
-
+ 
         $stmt = $this->conn->prepare(
             "INSERT INTO dictionaries
                 (dict_identifier, name, type, source_lang_1, source_lang_2, source_lang_3, created_by)
