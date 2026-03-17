@@ -1,6 +1,6 @@
 <?php
-$host = "localhost";
-$dbname = "indiclex_db";
+$host = "127.0.0.1";
+$dbname = "indiclex_db_d";
 $username = "root";   // new user
 $password = "";     // password you just set
 
