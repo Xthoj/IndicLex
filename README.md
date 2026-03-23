@@ -1,0 +1,1 @@
+I'm gonna keep our github repository the same structure as what our project folder in xampp/htdocs would probably look like, you can copy the same exact layout but I just did this to ensure some organizations because we had some dupes and random php files out in the open.
