@@ -2,57 +2,47 @@
 /**
  * public/upload_xlsx.php
  * Bulk dictionary import from Excel (.xlsx) using PhpSpreadsheet.
- * Each sheet in the workbook becomes a separate dictionary.
+ * Each sheet becomes a separate dictionary entry.
  * Sheet name is used as the dictionary name.
  *
  * Column order (no header row expected):
- *   A=word, B=part_of_speech, C=meaning, D=translation1, E=translation2
+ *   A=lang_1, B=lang_2, C=lang_3, D=pronunciation, E=part_of_speech, F=example
  *
- * Place this file in:  IndicLex/public/upload_xlsx.php
- * Requires:            IndicLex/vendor/ (from: composer require phpoffice/phpspreadsheet)
+ * Requires: IndicLex/vendor/ (composer require phpoffice/phpspreadsheet)
  */
 
-require_once '../config/database.php';          // provides $conn (PDO)
-require_once '../vendor/autoload.php';          // PhpSpreadsheet
+require_once '../config/database.php';
+require_once '../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Shared\Date as XlDate;
 
 session_start();
 
-/* ─── Config ──────────────────────────────────────────────────────── */
 define('MAX_FILE_MB',  20);
-define('MAX_WORD_LEN', 255);
-define('MAX_POS_LEN',  20);
+define('MAX_LANG_LEN', 255);
 define('CHUNK_SIZE',   500);
 
-/* ─── Helpers ─────────────────────────────────────────────────────── */
 function h(string $s): string     { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
 function clean(string $s): string { return trim(strip_tags($s)); }
 
-/* ─── Flash ───────────────────────────────────────────────────────── */
 $flash = [];
 if (isset($_SESSION['import_result'])) {
     $flash = $_SESSION['import_result'];
     unset($_SESSION['import_result']);
 }
 
-/* ─── CSRF ────────────────────────────────────────────────────────── */
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 $csrfToken = $_SESSION['csrf_token'];
 
-/* ─── Handle POST ─────────────────────────────────────────────────── */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // CSRF check
     if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
         $_SESSION['import_result'] = ['error' => 'Security token mismatch. Please try again.'];
         header('Location: upload_xlsx.php'); exit;
     }
 
-    // ── File upload checks ─────────────────────────────────────────
     $uploadErrors = [
         UPLOAD_ERR_INI_SIZE   => 'File exceeds the server upload_max_filesize limit.',
         UPLOAD_ERR_FORM_SIZE  => 'File exceeds the form MAX_FILE_SIZE limit.',
@@ -82,7 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: upload_xlsx.php'); exit;
     }
 
-    // ── Load workbook with PhpSpreadsheet ──────────────────────────
     try {
         $spreadsheet = IOFactory::load($tmp);
     } catch (\Exception $e) {
@@ -90,41 +79,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: upload_xlsx.php'); exit;
     }
 
-    // ── Process each sheet as a separate dictionary ────────────────
     $sheetResults = [];
-    $insertStmt   = $conn->prepare(
+
+    $insertStmt = $conn->prepare(
         "INSERT INTO dictionary_entries
-             (dictionary_id, word, part_of_speech, meaning, translation1, translation2)
-         VALUES (?,?,?,?,?,?)"
+             (dict_id, lang_1, lang_2, lang_3, pronunciation, part_of_speech, example)
+         VALUES (?,?,?,?,?,?,?)"
     );
 
     foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
 
-        // Dictionary name from sheet name
         $sheetName = trim($worksheet->getTitle());
-        $dictName  = ucwords(str_replace(['-', '_'], ' ', $sheetName));
+
+        // Derive dict_identifier from sheet name: "Telugu -Telugu" → "telugu-telugu"
+        $dictIdentifier = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $sheetName));
+        $dictIdentifier = trim($dictIdentifier, '-');
+
+        // Determine if trilingual based on sheet name containing 3 languages
+        $parts = preg_split('/[\s\-–]+/', $sheetName);
+        $isTrilingual = count(array_filter($parts)) >= 3;
+        $type = $isTrilingual ? 'trilingual' : 'bilingual';
 
         // Auto-create dictionary if it doesn't exist
         try {
             $conn->prepare(
-                "INSERT INTO dictionaries (name) SELECT ? WHERE NOT EXISTS
-                 (SELECT 1 FROM dictionaries WHERE name = ?)"
-            )->execute([$dictName, $dictName]);
+                "INSERT INTO dictionaries (dict_identifier, name, type, source_lang_1, source_lang_2, source_lang_3)
+                 SELECT ?, ?, ?, ?, ?, ?
+                 WHERE NOT EXISTS (SELECT 1 FROM dictionaries WHERE dict_identifier = ?)"
+            )->execute([
+                $dictIdentifier,
+                $sheetName,
+                $type,
+                $parts[0] ?? $sheetName,
+                $parts[1] ?? '',
+                $isTrilingual ? ($parts[2] ?? null) : null,
+                $dictIdentifier
+            ]);
 
-            $s = $conn->prepare("SELECT dictionary_id FROM dictionaries WHERE name = ?");
-            $s->execute([$dictName]);
+            $s = $conn->prepare("SELECT dict_id FROM dictionaries WHERE dict_identifier = ?");
+            $s->execute([$dictIdentifier]);
             $dict_id = $s->fetchColumn();
         } catch (PDOException $e) {
             $sheetResults[] = [
-                'sheet'  => $sheetName,
-                'error'  => 'Could not create dictionary record: ' . $e->getMessage(),
+                'sheet' => $sheetName,
+                'error' => 'Could not create dictionary record: ' . $e->getMessage(),
             ];
             continue;
         }
 
-        // Load existing words for duplicate detection
+        // Load existing lang_1 entries for duplicate detection
         try {
-            $s = $conn->prepare("SELECT LOWER(word) FROM dictionary_entries WHERE dictionary_id = ?");
+            $s = $conn->prepare("SELECT LOWER(lang_1) FROM dictionary_entries WHERE dict_id = ?");
             $s->execute([$dict_id]);
             $existing = array_flip($s->fetchAll(PDO::FETCH_COLUMN));
         } catch (PDOException $e) {
@@ -135,7 +140,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             continue;
         }
 
-        // ── Row loop ───────────────────────────────────────────────
         $toInsert   = [];
         $rowErrors  = [];
         $duplicates = [];
@@ -143,41 +147,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $highestRow = $worksheet->getHighestRow();
 
         for ($rowNum = 1; $rowNum <= $highestRow; $rowNum++) {
+            $lang1 = clean((string)($worksheet->getCell('A' . $rowNum)->getValue() ?? ''));
+            $lang2 = clean((string)($worksheet->getCell('B' . $rowNum)->getValue() ?? ''));
+            $lang3 = clean((string)($worksheet->getCell('C' . $rowNum)->getValue() ?? ''));
+            $pron  = clean((string)($worksheet->getCell('D' . $rowNum)->getValue() ?? ''));
+            $pos   = clean((string)($worksheet->getCell('E' . $rowNum)->getValue() ?? ''));
+            $ex    = clean((string)($worksheet->getCell('F' . $rowNum)->getValue() ?? ''));
 
-            // Read cells A–E by position
-            $word = clean((string)($worksheet->getCell('A' . $rowNum)->getValue() ?? ''));
-            $pos  = clean((string)($worksheet->getCell('B' . $rowNum)->getValue() ?? ''));
-            $mean = clean((string)($worksheet->getCell('C' . $rowNum)->getValue() ?? ''));
-            $tr1  = clean((string)($worksheet->getCell('D' . $rowNum)->getValue() ?? ''));
-            $tr2  = clean((string)($worksheet->getCell('E' . $rowNum)->getValue() ?? ''));
+            // Skip blank rows
+            if ($lang1 === '' && $lang2 === '') { $skipped++; continue; }
 
-            // Skip fully blank rows
-            if ($word === '' && $pos === '' && $mean === '') { $skipped++; continue; }
-
-            // Validate
             $errs = [];
-            if ($word === '')                     $errs[] = 'word is empty';
-            if (mb_strlen($word) > MAX_WORD_LEN)  $errs[] = 'word exceeds ' . MAX_WORD_LEN . ' chars';
-            if (mb_strlen($pos)  > MAX_POS_LEN)   $errs[] = 'part_of_speech exceeds ' . MAX_POS_LEN . ' chars';
+            if ($lang1 === '')                      $errs[] = 'lang_1 is empty';
+            if ($lang2 === '')                      $errs[] = 'lang_2 is empty';
+            if (mb_strlen($lang1) > MAX_LANG_LEN)   $errs[] = 'lang_1 too long';
+            if (mb_strlen($lang2) > MAX_LANG_LEN)   $errs[] = 'lang_2 too long';
 
             if ($errs) {
-                $rowErrors[] = "Row $rowNum: " . implode('; ', $errs) . " (word=\"$word\")";
+                $rowErrors[] = "Row $rowNum: " . implode('; ', $errs) . " (lang_1=\"$lang1\")";
                 continue;
             }
 
-            // Duplicate check
-            $key = mb_strtolower($word);
+            $key = mb_strtolower($lang1);
             if (isset($existing[$key])) {
-                $duplicates[] = "Row $rowNum: \"$word\" already exists — skipped.";
+                $duplicates[] = "Row $rowNum: \"$lang1\" already exists — skipped.";
                 $skipped++;
                 continue;
             }
             $existing[$key] = true;
 
-            $toInsert[] = [$dict_id, $word, $pos, $mean, $tr1, $tr2];
+            $toInsert[] = [
+                $dict_id,
+                $lang1,
+                $lang2,
+                $lang3 !== '' ? $lang3 : null,
+                $pron  !== '' ? $pron  : null,
+                $pos   !== '' ? $pos   : null,
+                $ex    !== '' ? $ex    : null,
+            ];
         }
 
-        // ── Bulk insert ────────────────────────────────────────────
         $inserted = 0;
         if ($toInsert) {
             try {
@@ -191,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($conn->inTransaction()) $conn->rollBack();
                 $sheetResults[] = [
                     'sheet'      => $sheetName,
-                    'dict_name'  => $dictName,
+                    'dict_name'  => $sheetName,
                     'error'      => 'Insert failed: ' . $e->getMessage(),
                     'row_errors' => $rowErrors,
                     'duplicates' => $duplicates,
@@ -202,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $sheetResults[] = [
             'sheet'      => $sheetName,
-            'dict_name'  => $dictName,
+            'dict_name'  => $sheetName,
             'inserted'   => $inserted,
             'skipped'    => $skipped,
             'row_errors' => $rowErrors,
@@ -210,7 +219,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
     }
 
-    // Free memory
     $spreadsheet->disconnectWorksheets();
     unset($spreadsheet);
 
@@ -218,11 +226,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: upload_xlsx.php'); exit;
 }
 
-/* ─── HTML ────────────────────────────────────────────────────────── */
 include '../includes/header.php';
 ?>
 <style>
-.import-wrap { max-width: 700px; margin: 2rem auto; }
+.import-wrap { max-width: 700px; margin: 6rem auto 2rem; }
 .import-wrap h2 { margin-bottom: 1rem; }
 .import-wrap label { display: block; margin: .8rem 0 .2rem; font-weight: bold; }
 .import-wrap input[type=file] { width: 100%; padding: .4rem; box-sizing: border-box; }
@@ -257,7 +264,7 @@ details ul { font-size: .85rem; margin: .3rem 0; padding-left: 1.2rem; }
 
     <?php foreach ($flash['sheets'] as $r): ?>
       <div class="sheet-result">
-        <h3>📄 <?= h($r['sheet']) ?> → <em><?= h($r['dict_name'] ?? $r['sheet']) ?></em></h3>
+        <h3>📄 <?= h($r['sheet']) ?></h3>
 
         <?php if (!empty($r['error'])): ?>
           <div class="alert a-err" style="margin:.3rem 0">❌ <?= h($r['error']) ?></div>
@@ -297,9 +304,8 @@ details ul { font-size: .85rem; margin: .3rem 0; padding-left: 1.2rem; }
     <label for="xlsx_file">Excel File (.xlsx)</label>
     <input type="file" name="xlsx_file" id="xlsx_file" accept=".xlsx,.xls" required>
     <p class="hint">
-      Each sheet in the workbook is imported as a separate dictionary.<br>
-      The sheet name becomes the dictionary name automatically.<br>
-      Column order: <code>A=word &nbsp; B=part of speech &nbsp; C=meaning &nbsp; D=translation1 &nbsp; E=translation2</code><br>
+      Each sheet is imported as a separate dictionary using the sheet name.<br>
+      Column order: <code>A=lang_1 &nbsp; B=lang_2 &nbsp; C=lang_3 &nbsp; D=pronunciation &nbsp; E=part_of_speech &nbsp; F=example</code><br>
       Max <?= MAX_FILE_MB ?> MB &middot; No header row needed.
     </p>
 
