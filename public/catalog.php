@@ -1,37 +1,74 @@
 <?php
+/**
+ * public/catalog.php
+ * Lists all active dictionaries using professor's schema.
+ */
 require_once '../config/database.php';
 
-$stmt = $conn->query("
-    SELECT name, description, created_at
-    FROM dictionaries
-    ORDER BY created_at DESC
-");
-
+$stmt = $conn->query(
+    "SELECT dict_id, name, type, source_lang_1, source_lang_2, source_lang_3,
+            description, entry_count, created_at
+     FROM   dictionaries
+     WHERE  is_active = 1
+     ORDER  BY created_at DESC"
+);
 $dictionaries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+include '../includes/header.php';
 ?>
+<style>
+.catalog-wrap { max-width: 900px; margin: 6rem auto 2rem; padding: 0 1.5rem; }
+.catalog-wrap h2 { margin-bottom: 1.5rem; }
+.dict-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem; background: #fff; }
+.dict-card h5 { margin: 0 0 .4rem; font-size: 1.1rem; }
+.dict-type { display: inline-block; font-size: .75rem; padding: .15rem .5rem;
+             border-radius: 999px; margin-bottom: .4rem; font-weight: bold; }
+.type-bilingual  { background: #dbeafe; color: #1e40af; }
+.type-trilingual { background: #ede9fe; color: #5b21b6; }
+.lang-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin: .4rem 0; }
+.lang-tag { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px;
+            font-size: .8rem; padding: .1rem .5rem; }
+.entry-count { font-size: .85rem; color: #6b7280; }
+</style>
 
-<?php if (count($dictionaries) > 0): ?>
-  <?php foreach ($dictionaries as $row): ?>
+<div class="catalog-wrap">
+  <h2>📚 Dictionary Catalog</h2>
 
-    <div class="card mb-3">
-      <div class="card-body">
+  <?php if (empty($dictionaries)): ?>
+    <p>No dictionaries found. <a href="upload_xlsx.php">Import one to get started.</a></p>
+  <?php else: ?>
+    <?php foreach ($dictionaries as $d): ?>
+      <div class="dict-card">
+        <h5><?= htmlspecialchars($d['name']) ?></h5>
 
-        <h5><?php echo htmlspecialchars($row['name']); ?></h5>
+        <span class="dict-type type-<?= $d['type'] ?>"><?= ucfirst($d['type']) ?></span>
 
-        <?php if (!empty($row['description'])): ?>
-          <p><?php echo htmlspecialchars($row['description']); ?></p>
+        <div class="lang-tags">
+          <span class="lang-tag"><?= htmlspecialchars($d['source_lang_1']) ?></span>
+          <span class="lang-tag"><?= htmlspecialchars($d['source_lang_2']) ?></span>
+          <?php if (!empty($d['source_lang_3'])): ?>
+            <span class="lang-tag"><?= htmlspecialchars($d['source_lang_3']) ?></span>
+          <?php endif; ?>
+        </div>
+
+        <?php if (!empty($d['description'])): ?>
+          <p style="margin:.4rem 0 .3rem; font-size:.9rem"><?= htmlspecialchars($d['description']) ?></p>
         <?php endif; ?>
 
-        <?php if (!empty($row['created_at'])): ?>
-          <small class="text-muted">
-            Created on: <?php echo date('M d, Y', strtotime($row['created_at'])); ?>
-          </small>
-        <?php endif; ?>
-
+        <div class="entry-count">
+          <?= number_format((int)$d['entry_count']) ?> entries
+          <?php if (!empty($d['created_at'])): ?>
+            &middot; Added <?= date('M d, Y', strtotime($d['created_at'])) ?>
+          <?php endif; ?>
+        </div>
       </div>
-    </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
 
-  <?php endforeach; ?>
-<?php else: ?>
-  <p>No dictionaries found.</p>
-<?php endif; ?>
+  <p style="margin-top:1.5rem">
+    <a href="upload_xlsx.php">→ Import a dictionary</a> &nbsp;|&nbsp;
+    <a href="search.php">→ Search</a>
+  </p>
+</div>
+
+<?php include '../includes/footer.php'; ?>
