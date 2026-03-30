@@ -251,7 +251,7 @@ details ul { font-size: .85rem; margin: .3rem 0; padding-left: 1.2rem; }
 </style>
 
 <div class="import-wrap">
-  <h2>📥 Bulk Dictionary Import (Excel)</h2>
+  <h2>Bulk Dictionary Import (Excel)</h2>
 
   <?php if (!empty($flash['error'])): ?>
     <div class="alert a-err">❌ <?= h($flash['error']) ?></div>

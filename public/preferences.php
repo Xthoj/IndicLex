@@ -119,11 +119,11 @@ body.dark .pref-saved-banner { background: #14532d; color: #bbf7d0; border-color
 </style>
 
 <div class="pref-wrap">
-  <h2>&#9881;&#65039; Preferences</h2>
+  <h2>Preferences</h2>
   <p class="subtitle">Your settings are saved in browser cookies and applied on every page load.</p>
 
   <?php if ($saved): ?>
-    <div class="pref-saved-banner">&#9989; Preferences saved successfully!</div>
+    <div class="pref-saved-banner">Preferences saved successfully!</div>
   <?php endif; ?>
 
   <div class="pref-card">
@@ -131,7 +131,7 @@ body.dark .pref-saved-banner { background: #14532d; color: #bbf7d0; border-color
 
       <!-- Theme -->
       <div class="pref-field">
-        <label class="field-label">&#127912; Theme</label>
+        <label class="field-label">Theme</label>
         <p class="field-hint">Choose how IndicLex looks on your device.</p>
         <div class="theme-tiles">
           <div class="theme-tile">
@@ -155,7 +155,7 @@ body.dark .pref-saved-banner { background: #14532d; color: #bbf7d0; border-color
 
       <!-- Results per page -->
       <div class="pref-field">
-        <label class="field-label" for="results_per_page">&#128196; Results per page</label>
+        <label class="field-label" for="results_per_page">Results per page</label>
         <p class="field-hint">How many search results to display per page.</p>
         <select name="results_per_page" id="results_per_page">
           <?php foreach ([5, 10, 20, 50] as $n): ?>
@@ -171,7 +171,7 @@ body.dark .pref-saved-banner { background: #14532d; color: #bbf7d0; border-color
 
       <!-- Default dictionary -->
       <div class="pref-field">
-        <label class="field-label" for="default_dict">&#128218; Default dictionary</label>
+        <label class="field-label" for="default_dict">Default dictionary</label>
         <p class="field-hint">Pre-select a dictionary when you open Search.</p>
         <select name="default_dict" id="default_dict">
           <option value="all"

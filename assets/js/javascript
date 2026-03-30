@@ -32,19 +32,20 @@ function getCookie(name) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  const savedTheme = getCookie("theme");
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark");
-    toggle.check = true;
-  }
-});
+    const toggle = document.getElementById("theme-toggle");
+    const savedTheme = getCookie("theme");
+    if (savedTheme === "dark") {
+        document.body.classList.add("dark");
+        toggle.checked = true;
+    }
 
-document.getElementById("theme-toggle").addEventListener("change", function () {
-  if (this.checked) {
-    document.body.classList.add("dark");
-    setCookie("theme", "dark", 365);
-  } else {
-    document.body.classList.remove("dark");
-    setCookie("theme", "light", 365);
-  }
+    toggle.addEventListener("change", function () {
+        if (this.checked) {
+            document.body.classList.add("dark");
+            setCookie("theme", "dark", 365);
+        } else {
+            document.body.classList.remove("dark");
+            setCookie("theme", "light", 365);
+        }
+    });
 });

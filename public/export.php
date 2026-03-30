@@ -161,7 +161,7 @@ a.ebtn[disabled] { opacity:.35; pointer-events:none; }
 </style>
 
 <div class="export-wrap">
-  <h2>📤 Export Dictionary</h2>
+  <h2>Export Dictionary</h2>
 
   <?php if (isset($_GET['empty'])): ?>
     <div class="alert">⚠️ That dictionary has no entries yet. Import some data first.</div>
