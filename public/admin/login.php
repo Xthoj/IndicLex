@@ -165,7 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </body>
 </html>
-=======
 /**
  * public/admin/login.php
  * Admin login is now handled through the main Sign In page.
