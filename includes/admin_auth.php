@@ -1,8 +1,7 @@
 <?php
-<<<<<<< HEAD
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
-=======
 /**
  * includes/admin_auth.php
  * Starts a persistent session and provides requireAdmin() guard.
@@ -34,7 +33,6 @@ if (session_status() === PHP_SESSION_NONE) {
             'samesite' => 'Lax',
         ]);
     }
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
 }
 
 function requireAdmin()
@@ -46,9 +44,7 @@ function requireAdmin()
     ) {
         header('Location: login.php');
         exit;
-    }
-<<<<<<< HEAD
+
 }
-=======
 }
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
+
