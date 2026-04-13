@@ -1,8 +1,11 @@
-<<<<<<< HEAD
-    <?php
-=======
 <?php
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
+session_start();
+
+if (!isset($_SESSION['admin_id'])) {
+    header('Location: login.php');
+    exit;
+}
+?>
 require_once '../../includes/admin_auth.php';
 require_once '../../includes/admin_stats.php';
 require_once '../../config/database.php';
@@ -11,7 +14,6 @@ requireAdmin();
 
 $stats = getDashboardStats($conn);
 ?>
-<<<<<<< HEAD
 
 <!DOCTYPE html>
 <html lang="en">
@@ -310,4 +312,3 @@ $stats = getDashboardStats($conn);
 <script src="../../assets/js/script.js"></script>
 </body>
 </html>
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
