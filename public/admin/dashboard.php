@@ -312,3 +312,4 @@ $stats = getDashboardStats($conn);
 <script src="../../assets/js/script.js"></script>
 </body>
 </html>
+
