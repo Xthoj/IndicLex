@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -44,7 +44,7 @@ if (session_status() === PHP_SESSION_NONE) {
       </div>
     </div>
   </nav>
-=======
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -79,5 +79,4 @@ if (session_status() === PHP_SESSION_NONE) {
       </div>
     </div>
   </nav>
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
 </header>
