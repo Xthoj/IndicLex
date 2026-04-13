@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 <?php
 /**
  * public/upload_xlsx.php
@@ -642,4 +642,3 @@ details ul { font-size: .85rem; margin: .3rem 0; padding-left: 1.2rem; }
 </div>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
