@@ -28,9 +28,9 @@ require_once __DIR__ . '/../config/app.php';
   <li><a href="<?= BASE_URL ?>/public/search.php">Search</a></li>
   <li><a href="<?= BASE_URL ?>/public/preferences.php">Preferences</a></li>
    <?php if (isset($_SESSION['admin_id'])): ?>
-    <li><a href="<?= BASE_URL ?>/public/admin/dashboard.php">Admin</a></li>
+    <li><a href="<?= BASE_URL ?>/public/admin/dashboard.php">Dashboard</a></li>
   <?php else: ?>
-    <li><a href="<?= BASE_URL ?>/public/admin/login.php">Admin</a></li>
+    <li><a href="<?= BASE_URL ?>/public/admin/login.php">Login</a></li>
   <?php endif; ?>
  </ul>
       </div>
