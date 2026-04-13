@@ -1,4 +1,4 @@
-<?php include '../includes/header.php'; ?>
+<?php require_once __DIR__ . '/../includes/header.php'; ?>
  
 <div class="hero-image">
   <div class="hero-text">

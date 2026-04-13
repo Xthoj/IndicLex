@@ -27,4 +27,3 @@ function getDashboardStats(PDO $conn): array
 
     return $stats;
 }
-?>

@@ -26,7 +26,9 @@ body {
   background-color: var(--bg);
   color: var(--text);
   padding-top: 90px;
-  padding-bottom: 70px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
   header {
@@ -175,8 +177,8 @@ input:checked + .slider:before {
 
 
 
-  body, html {
-    height: 100%;
+.main-content {
+  flex: 1;
 }
 @media (max-width: 700px) {
     nav .fa {
@@ -221,7 +223,7 @@ input:checked + .slider:before {
 
   background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(../../images/hero.jpg);
 
-  height: 100%;
+  height: calc(100vh - 90px);
 
   background-position: center;
   background-repeat: no-repeat;
@@ -274,6 +276,79 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 40px;
+  margin-top: auto;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 80px auto;
+    background: #fff;
+    color: #111;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.login-container h1 {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.error {
+    background: #ffe5e5;
+    color: #b30000;
+    border: 1px solid #ffb3b3;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.login-container button {
+    width: 100%;
+    padding: 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.login-container button:hover {
+    background: #0056b3;
+}
+
+.back-link {
+    display: block;
+    text-align: center;
+    margin-top: 18px;
+    text-decoration: none;
+    color: #007bff;
+}
+
+.back-link:hover {
+    text-decoration: underline;
 }
 

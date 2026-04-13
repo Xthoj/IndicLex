@@ -1,6 +1,7 @@
+</main>
 <footer class="footer">
     <p>&copy; 2026 IndicLex Project</p>
 </footer>
-<script src="../assets/js/javascript"></script>
+<script src="<?= BASE_URL ?>/assets/js/javascript"></script>
 </body>
 </html>

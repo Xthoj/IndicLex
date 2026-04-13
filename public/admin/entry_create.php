@@ -1,44 +1,48 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/auth.php';
+require_once '../../includes/admin_auth.php';
+require_once '../../config/database.php';
+
+requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: manage_dictionaries.php');
     exit;
 }
 
-$dictionary_id = (int) ($_POST['dictionary_id'] ?? 0);
-$word = trim($_POST['word'] ?? '');
+$dict_id       = (int)($_POST['dict_id'] ?? 0);
+$lang_1        = trim($_POST['lang_1'] ?? '');
+$lang_2        = trim($_POST['lang_2'] ?? '');
+$lang_3        = trim($_POST['lang_3'] ?? '');
+$pronunciation = trim($_POST['pronunciation'] ?? '');
 $part_of_speech = trim($_POST['part_of_speech'] ?? '');
-$meaning = trim($_POST['meaning'] ?? '');
-$translation1 = trim($_POST['translation1'] ?? '');
-$translation2 = trim($_POST['translation2'] ?? '');
+$example       = trim($_POST['example'] ?? '');
+$notes         = trim($_POST['notes'] ?? '');
+$is_active     = isset($_POST['is_active']) ? 1 : 0;
 
-if ($dictionary_id <= 0 || $word === '' || $meaning === '') {
-    header('Location: manage_entries.php?dictionary_id=' . $dictionary_id . '&error=Please fill in all required fields');
+if ($dict_id <= 0 || $lang_1 === '') {
+    header('Location: manage_entries.php?dict_id=' . $dict_id . '&error=Language 1 is required');
     exit;
 }
 
-try {
-    $sql = "INSERT INTO dictionary_entries
-            (dictionary_id, word, part_of_speech, meaning, translation1, translation2, created_at)
-            VALUES
-            (:dictionary_id, :word, :part_of_speech, :meaning, :translation1, :translation2, NOW())";
+$stmt = $conn->prepare("
+    INSERT INTO dictionary_entries
+        (dict_id, lang_1, lang_2, lang_3, pronunciation, part_of_speech, example, notes, is_active)
+    VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+");
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-        ':dictionary_id' => $dictionary_id,
-        ':word' => $word,
-        ':part_of_speech' => $part_of_speech,
-        ':meaning' => $meaning,
-        ':translation1' => $translation1,
-        ':translation2' => $translation2
-    ]);
+$stmt->execute([
+    $dict_id,
+    $lang_1,
+    $lang_2,
+    $lang_3,
+    $pronunciation,
+    $part_of_speech,
+    $example,
+    $notes,
+    $is_active,
+]);
 
-    header('Location: manage_entries.php?dictionary_id=' . $dictionary_id . '&success=Entry created successfully');
-    exit;
-} catch (PDOException $e) {
-    header('Location: manage_entries.php?dictionary_id=' . $dictionary_id . '&error=Failed to create entry');
-    exit;
-}
+header('Location: manage_entries.php?dict_id=' . $dict_id . '&success=Entry created successfully');
+exit;
 ?>

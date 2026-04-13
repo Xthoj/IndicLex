@@ -1,123 +1,110 @@
-    <?php
-require_once '../../includes/admin_auth.php';
-require_once '../../includes/admin_stats.php';
-require_once '../../config/database.php';
+<?php
+require_once __DIR__ . '/../../includes/admin_auth.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/admin_stats.php';
 
 requireAdmin();
 
 $stats = getDashboardStats($conn);
+
+require_once __DIR__ . '/../../includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - IndicLex</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
-        }
+<style>
+    .container {
+        width: 90%;
+        max-width: 1100px;
+        margin: 30px auto;
+    }
 
-        .container {
-            width: 90%;
-            max-width: 1100px;
-            margin: 30px auto;
-        }
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
 
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
+    .card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
 
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-        }
+    .card h2 {
+        margin: 0 0 10px;
+        font-size: 18px;
+    }
 
-        .card h2 {
-            margin: 0 0 10px;
-            font-size: 18px;
-        }
+    .card p {
+        font-size: 30px;
+        margin: 0;
+        font-weight: bold;
+        color: #007bff;
+    }
 
-        .card p {
-            font-size: 30px;
-            margin: 0;
-            font-weight: bold;
-            color: #007bff;
-        }
+    .logout {
+        text-decoration: none;
+        color: #007bff;
+        font-weight: bold;
+    }
 
-        .logout {
-            text-decoration: none;
-            color: #007bff;
-            font-weight: bold;
-        }
+    .dashboard-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        margin-top: 15px;
+    }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-            margin-top: 15px;
-        }
+    .dashboard-table th,
+    .dashboard-table td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: left;
+    }
 
-        th, td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
+    .dashboard-table th {
+        background: #f2f2f2;
+    }
 
-        th {
-            background: #f2f2f2;
-        }
+    .action-links {
+        margin-top: 30px;
+    }
 
-        .action-links {
-            margin-top: 30px;
-        }
+    .action-links a {
+        display: inline-block;
+        margin-right: 15px;
+        padding: 10px 16px;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+    }
 
-        .action-links a {
-            display: inline-block;
-            margin-right: 15px;
-            padding: 10px 16px;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-        }
+    .btn-blue  { background: #007bff; }
+    .btn-green { background: #28a745; }
 
-        .btn-blue {
-            background: #007bff;
-        }
-
-        .btn-green {
-            background: #28a745;
-        }
-    </style>
-</head>
-<body>
+    body.dark .card            { background: #1e1e1e; color: white; }
+    body.dark .dashboard-table { background: #1e1e1e; color: white; }
+    body.dark .dashboard-table th { background: #2d2d2d; color: white; }
+    body.dark .dashboard-table td { border-color: #444; }
+</style>
 
 <div class="container">
-
     <div class="topbar">
         <div>
-            <h1>IndicLex Admin Dashboard</h1>
+            <h1>Admin Dashboard</h1>
             <p>Welcome, <?php echo htmlspecialchars($_SESSION['admin_username']); ?></p>
         </div>
-
         <div>
-            <a class="logout" href="../index.php" style="margin-right:15px;">← Back to home</a>
+            <a class="logout" href="<?= BASE_URL ?>/public/index.php" style="margin-right:15px;">← Back to home</a>
             <a class="logout" href="logout.php">Logout</a>
         </div>
     </div>
@@ -127,7 +114,6 @@ $stats = getDashboardStats($conn);
             <h2>Total Dictionaries</h2>
             <p><?php echo htmlspecialchars($stats['total_dictionaries']); ?></p>
         </div>
-
         <div class="card">
             <h2>Total Words</h2>
             <p><?php echo htmlspecialchars($stats['total_words']); ?></p>
@@ -136,7 +122,7 @@ $stats = getDashboardStats($conn);
 
     <h2>Words Per Dictionary</h2>
 
-    <table>
+    <table class="dashboard-table">
         <thead>
             <tr>
                 <th>Dictionary</th>
@@ -154,10 +140,8 @@ $stats = getDashboardStats($conn);
     </table>
 
     <div class="action-links">
-    <a href="manage_dictionaries.php" class="btn-blue">Manage Dictionaries</a>
-    <a href="manage_dictionaries.php" class="btn-green">Manage Dictionaries / Entries</a>
-</div>
+        <a href="manage_dictionaries.php" class="btn-blue">Manage Dictionaries / Entries</a>
+    </div>
 </div>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
