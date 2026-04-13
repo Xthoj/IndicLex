@@ -1,7 +1,4 @@
 <?php
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
 /**
  * includes/admin_auth.php
  * Starts a persistent session and provides requireAdmin() guard.
@@ -10,41 +7,37 @@ if (session_status() === PHP_SESSION_NONE) {
  */
 
 if (session_status() === PHP_SESSION_NONE) {
-    // Keep the session alive for 7 days
-    $lifetime = 7 * 24 * 60 * 60; // 604800 seconds
+    $lifetime = 7 * 24 * 60 * 60; // 7 days
 
     session_set_cookie_params([
         'lifetime' => $lifetime,
-        'path'     => '/',
-        'secure'   => false,   // set to true if using HTTPS
+        'path' => '/',
+        'secure' => false,
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
 
     session_start();
 
-    // Refresh the cookie expiry on every request so activity resets the timer
     if (isset($_SESSION['admin_id'])) {
         setcookie(session_name(), session_id(), [
-            'expires'  => time() + $lifetime,
-            'path'     => '/',
-            'secure'   => false,
+            'expires' => time() + $lifetime,
+            'path' => '/',
+            'secure' => false,
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
     }
 }
 
-function requireAdmin()
+function requireAdmin(): void
 {
     if (
         !isset($_SESSION['admin_id']) ||
         !isset($_SESSION['admin_role']) ||
         $_SESSION['admin_role'] !== 'admin'
     ) {
-        header('Location: login.php');
+        header('Location: /IndicLex-main/public/admin/login.php');
         exit;
-
+    }
 }
-}
-
