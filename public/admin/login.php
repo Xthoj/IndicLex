@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 session_start();
 require_once '../../config/database.php';
 
@@ -165,3 +166,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </body>
 </html>
+=======
+/**
+ * public/admin/login.php
+ * Admin login is now handled through the main Sign In page.
+ * Redirect there to keep the flow unified.
+ */
+header('Location: ../login.php');
+exit;
+>>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
