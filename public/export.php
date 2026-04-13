@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 <?php
 /**
  * public/export.php
@@ -420,4 +420,4 @@ function updateLinks() {
 </script>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
+
