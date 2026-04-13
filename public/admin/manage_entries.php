@@ -4,7 +4,6 @@ require_once '../../config/database.php';
 
 requireAdmin();
 
-<<<<<<< HEAD
 $dict_id = (int)($_GET['dict_id'] ?? 0);
 
 if ($dict_id <= 0) {
@@ -365,4 +364,3 @@ $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <script src="../../assets/js/script.js"></script>
 </body>
 </html>
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
