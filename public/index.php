@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 <?php include '../includes/header.php'; ?>
  
 <div class="hero-image">
@@ -83,6 +83,4 @@
     </div>
   </div>
 </section>
- 
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
 <?php include '../includes/footer.php'; ?>
