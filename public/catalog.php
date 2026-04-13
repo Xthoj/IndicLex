@@ -7,23 +7,20 @@ require_once '../config/database.php';
 
 $stmt = $conn->query(
     "SELECT dict_id, name, type, source_lang_1, source_lang_2, source_lang_3,
-<<<<<<< HEAD
      description, entry_count, created_at
      FROM dictionaries
      WHERE is_active = 1
      ORDER BY created_at DESC"
-=======
+
             description, entry_count, created_at
      FROM   dictionaries
      WHERE  is_active = 1
      ORDER  BY created_at DESC"
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
 );
 $dictionaries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 include '../includes/header.php';
 ?>
-<<<<<<< HEAD
 
 <style>
 .catalog-page {
