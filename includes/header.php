@@ -1,3 +1,8 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +26,11 @@
   <li><a href="catalog.php">Catalog</a></li>
   <li><a href="search.php">Search</a></li>
   <li><a href="preferences.php">Preferences</a></li>
-  <li><a href="admin/login.php">Admin</a></li>
+   <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
+    <li><a href="admin/logout.php">Logout</a></li>
+  <?php else: ?>
+    <li><a href="admin/login.php">Login</a></li>
+  <?php endif; ?>
  </ul>
       </div>
       <div class="nav-right">
@@ -29,7 +38,8 @@
           <input type="checkbox" id="theme-toggle">
           <span class="slider"></span>
         </label>
-        <a href="login.php" class="sign-in-btn">Sign In</a>
+        
+
       </div>
     </div>
   </nav>

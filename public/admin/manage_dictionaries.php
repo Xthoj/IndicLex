@@ -65,6 +65,13 @@ $dictionaries = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <a href="dashboard.php">← Back to Dashboard</a>
             <a href="logout.php">Logout</a>
         </div>
+        <?php if (isset($_GET['success'])): ?>
+            <p class="message-success"><?php echo htmlspecialchars($_GET['success']); ?></p>
+        <?php endif; ?>
+
+        <?php if (isset($_GET['error'])): ?>
+            <p class="message-error"><?php echo htmlspecialchars($_GET['error']); ?></p>
+        <?php endif; ?>
 
         <table id="dictionaryTable" class="display">
             <thead>
@@ -78,23 +85,34 @@ $dictionaries = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <th>Entry Count</th>
                     <th>Active</th>
                     <th>Created At</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($dictionaries as $row): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row['dict_id']); ?></td>
-                        <td><?php echo htmlspecialchars($row['dict_identifier'] ?? ''); ?></td>
-                        <td><?php echo htmlspecialchars($row['name'] ?? ''); ?></td>
-                        <td><?php echo htmlspecialchars($row['type'] ?? ''); ?></td>
-                        <td><?php echo htmlspecialchars($row['source_lang_1'] ?? ''); ?></td>
-                        <td><?php echo htmlspecialchars($row['description'] ?? ''); ?></td>
-                        <td><?php echo htmlspecialchars($row['entry_count'] ?? '0'); ?></td>
-                        <td><?php echo !empty($row['is_active']) ? 'Yes' : 'No'; ?></td>
-                        <td><?php echo htmlspecialchars($row['created_at'] ?? ''); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
+    <?php foreach ($dictionaries as $row): ?>
+        <tr>
+            <td><?php echo htmlspecialchars($row['dict_id']); ?></td>
+            <td><?php echo htmlspecialchars($row['dict_identifier'] ?? ''); ?></td>
+            <td><?php echo htmlspecialchars($row['name'] ?? ''); ?></td>
+            <td><?php echo htmlspecialchars($row['type'] ?? ''); ?></td>
+            <td><?php echo htmlspecialchars($row['source_lang_1'] ?? ''); ?></td>
+            <td><?php echo htmlspecialchars($row['description'] ?? ''); ?></td>
+            <td><?php echo htmlspecialchars($row['entry_count'] ?? '0'); ?></td>
+            <td><?php echo !empty($row['is_active']) ? 'Yes' : 'No'; ?></td>
+            <td><?php echo htmlspecialchars($row['created_at'] ?? ''); ?></td>
+           <td>
+    <a href="dictionary_update.php?id=<?php echo $row['dict_id']; ?>">Edit</a> |
+
+    <a href="manage_entries.php?dict_id=<?php echo $row['dict_id']; ?>">Manage Entries</a> |
+
+    <a href="dictionary_delete.php?id=<?php echo $row['dict_id']; ?>"
+       onclick="return confirm('Are you sure you want to delete this dictionary?');">
+        Delete
+    </a>
+</td>
+        </tr>
+    <?php endforeach; ?>
+</tbody>
         </table>
     </div>
 

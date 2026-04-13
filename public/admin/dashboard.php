@@ -154,10 +154,9 @@ $stats = getDashboardStats($conn);
     </table>
 
     <div class="action-links">
-        <a href="manage_dictionaries.php" class="btn-blue">Manage Dictionaries</a>
-        <a href="manage_entries.php" class="btn-green">Manage Entries</a>
-    </div>
-
+    <a href="manage_dictionaries.php" class="btn-blue">Manage Dictionaries</a>
+    <a href="manage_dictionaries.php" class="btn-green">Manage Dictionaries / Entries</a>
+</div>
 </div>
 
 </body>

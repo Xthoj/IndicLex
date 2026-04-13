@@ -2,8 +2,12 @@
 session_start();
 require_once '../../config/database.php';
 
-$error = '';
+if (isset($_SESSION['admin_id'])) {
+    header('Location: dashboard.php');
+    exit;
+}
 
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
