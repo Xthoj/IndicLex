@@ -154,7 +154,6 @@ include '../includes/header.php';
 
 <?php include '../includes/footer.php'; ?>
 <?php include '../includes/footer.php'; ?>
-=======
 <style>
 .catalog-wrap { max-width: 900px; margin: 6rem auto 2rem; padding: 0 1.5rem; }
 .catalog-wrap h2 { margin-bottom: 1.5rem; }
@@ -211,4 +210,3 @@ include '../includes/header.php';
 </div>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> 50c55f8a008be9bcda28bc86fc01a2fe49e49c16
