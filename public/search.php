@@ -133,6 +133,25 @@ body.dark .rpp-row { color:#9ca3af; }
 .pref-hint { font-size:.78rem; color:#6b7280; margin-top:.4rem; }
 .pref-hint a { color:#2563eb; }
 body.dark .pref-hint a { color:#60a5fa; }
+
+/* Autocomplete */
+.autocomplete-wrapper { position:relative; }
+.autocomplete-list { position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #d1d5db; border-top:none; border-radius:0 0 6px 6px; z-index:100; max-height:220px; overflow-y:auto; }
+.autocomplete-list li { list-style:none; padding:.45rem .6rem; cursor:pointer; font-size:.9rem; border-bottom:1px solid #f3f4f6; }
+.autocomplete-list li:hover, .autocomplete-list li.active { background:#eff6ff; }
+body.dark .autocomplete-list { background:#1e1e1e; border-color:#374151; }
+body.dark .autocomplete-list li { border-color:#374151; color:white; }
+body.dark .autocomplete-list li:hover, body.dark .autocomplete-list li.active { background:#1f2937; }
+
+/* Word length */
+.word-length-section { margin-top:2rem; }
+.word-length-section h3 { margin-bottom:.75rem; font-size:1rem; }
+.length-groups { display:flex; flex-wrap:wrap; gap:.5rem; }
+.length-badge { display:inline-flex; align-items:center; gap:.4rem; background:#f3f4f6; border:1px solid #d1d5db; border-radius:6px; padding:.3rem .7rem; font-size:.85rem; }
+.length-badge a { color:#2563eb; text-decoration:none; font-size:.75rem; }
+.length-badge a:hover { text-decoration:underline; }
+body.dark .length-badge { background:#1f2937; border-color:#374151; color:white; }
+body.dark .length-badge a { color:#60a5fa; }
 </style>
 
 <div class="search-wrap">
@@ -142,9 +161,13 @@ body.dark .pref-hint a { color:#60a5fa; }
 
     <div style="margin-bottom:1rem;">
       <label for="query"><strong>Search term</strong></label>
-      <input type="text" name="query" id="query"
-             value="<?= htmlspecialchars($query) ?>"
-             placeholder="Enter a word in any language..." required>
+      <div class="autocomplete-wrapper">
+        <input type="text" name="query" id="query"
+               value="<?= htmlspecialchars($query) ?>"
+               placeholder="Enter a word in any language..."
+               autocomplete="off" required>
+        <ul class="autocomplete-list" id="autocomplete-list" style="display:none;"></ul>
+      </div>
     </div>
 
     <!-- Hidden: carry per_page through pagination links -->
@@ -277,21 +300,115 @@ body.dark .pref-hint a { color:#60a5fa; }
       <?php endif; ?>
 
     <?php endif; ?>
+
+    <?php
+    // Word Length Matching — group all results by lang_1 length
+    if ($searched && $total_count > 0):
+        $length_groups = [];
+        foreach ($results as $row) {
+            $len = mb_strlen($row['lang_1']);
+            $length_groups[$len][] = $row['lang_1'];
+        }
+        ksort($length_groups);
+    ?>
+    <div class="word-length-section">
+      <h3>Word Length Matching</h3>
+      <div class="length-groups">
+        <?php foreach ($length_groups as $len => $words): ?>
+          <span class="length-badge">
+            <?= $len ?> letters (<?= count($words) ?>)
+            <a href="https://www.telugupuzzles.com/puzzles.php" target="_blank" rel="noopener">
+              Try in puzzle &rarr;
+            </a>
+          </span>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
   <?php endif; ?>
 
 </div>
 
 <script>
-/**
- * changePerPage – re-runs the current search with a new per_page value.
- * Resets to page 1 so the offset stays valid.
- */
 function changePerPage(n) {
   var url = new URL(window.location.href);
   url.searchParams.set('per_page', n);
   url.searchParams.set('page', '1');
   window.location.href = url.toString();
 }
+
+// Autocomplete
+(function () {
+  const input    = document.getElementById('query');
+  const list     = document.getElementById('autocomplete-list');
+  const dictSel  = document.getElementById('dict_id');
+  let debounce   = null;
+  let activeIdx  = -1;
+
+  function getApiBase() {
+    // Use the same origin; works with or without .htaccess clean URLs
+    const origin = window.location.origin;
+    const path   = window.location.pathname.replace(/\/search\.php$/, '');
+    return origin + path + '/api/search.php';
+  }
+
+  function showSuggestions(items) {
+    list.innerHTML = '';
+    activeIdx = -1;
+    if (!items.length) { list.style.display = 'none'; return; }
+
+    items.slice(0, 5).forEach(function (item, i) {
+      const li = document.createElement('li');
+      li.textContent = item.lang_1 + (item.lang_2 ? '  —  ' + item.lang_2 : '');
+      li.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        input.value = item.lang_1;
+        list.style.display = 'none';
+        document.getElementById('search-form').submit();
+      });
+      list.appendChild(li);
+    });
+    list.style.display = 'block';
+  }
+
+  input.addEventListener('input', function () {
+    clearTimeout(debounce);
+    const q = input.value.trim();
+    if (q.length < 2) { list.style.display = 'none'; return; }
+
+    debounce = setTimeout(function () {
+      const dict = dictSel ? dictSel.value : 'all';
+      const url  = getApiBase() + '?q=' + encodeURIComponent(q) + '&dict=' + encodeURIComponent(dict) + '&mode=substring';
+
+      fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (data) { showSuggestions(data.results || []); })
+        .catch(function () { list.style.display = 'none'; });
+    }, 250);
+  });
+
+  // Keyboard navigation
+  input.addEventListener('keydown', function (e) {
+    const items = list.querySelectorAll('li');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, -1);
+    } else if (e.key === 'Escape') {
+      list.style.display = 'none'; return;
+    } else { return; }
+    items.forEach(function (li, i) { li.classList.toggle('active', i === activeIdx); });
+    if (activeIdx >= 0) input.value = items[activeIdx].textContent.split('  —  ')[0];
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.autocomplete-wrapper')) list.style.display = 'none';
+  });
+})();
 </script>
 
 <?php include '../includes/footer.php'; ?>

@@ -140,7 +140,6 @@ include '../includes/header.php';
     <?php endif; ?>
 
     <p style="margin-top:1.5rem">
-        <a href="upload_xlsx.php">→ Import a dictionary</a> &nbsp;|&nbsp;
         <a href="search.php">→ Search</a>
     </p>
 </div>

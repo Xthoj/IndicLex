@@ -11,12 +11,13 @@
  * Requires: IndicLex/vendor/ (composer require phpoffice/phpspreadsheet)
  */
 
-require_once '../config/database.php';
-require_once '../vendor/autoload.php';
+require_once __DIR__ . '/../includes/admin_auth.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+requireAdmin();
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
-
-session_start();
 
 define('MAX_FILE_MB',  20);
 define('MAX_LANG_LEN', 255);
@@ -314,7 +315,7 @@ details ul { font-size: .85rem; margin: .3rem 0; padding-left: 1.2rem; }
 
   <p style="margin-top: 1.5rem">
     <a href="export.php">→ Export dictionary data</a> &nbsp;|&nbsp;
-    <a href="index.php">← Home</a>
+    <a href="admin/manage_dictionaries.php">← Back to Manage Dictionaries</a>
   </p>
 </div>
 
