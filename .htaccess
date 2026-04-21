@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# If your project is in a subdirectory on Bluehost, change RewriteBase to match.
+# e.g. if accessed at domain.com/indiclex/ use: RewriteBase /indiclex/
+# If at the domain root, leave as:
+RewriteBase /
+
+# Route clean API URL to the actual PHP file
+RewriteRule ^api/search$ public/api/search.php [L,QSA]

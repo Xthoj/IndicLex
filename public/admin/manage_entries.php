@@ -1,0 +1,148 @@
+<?php
+require_once __DIR__ . '/../../includes/admin_auth.php';
+require_once __DIR__ . '/../../config/database.php';
+
+requireAdmin();
+
+$dict_id = (int)($_GET['dict_id'] ?? 0);
+
+if ($dict_id <= 0) {
+    header('Location: ' . BASE_URL . '/public/admin/manage_dictionaries.php?error=Please select a dictionary first');
+    exit;
+}
+
+$stmtDict = $conn->prepare("SELECT dict_id, name FROM dictionaries WHERE dict_id = ?");
+$stmtDict->execute([$dict_id]);
+$dictionary = $stmtDict->fetch(PDO::FETCH_ASSOC);
+
+if (!$dictionary) {
+    header('Location: ' . BASE_URL . '/public/admin/manage_dictionaries.php?error=Dictionary not found');
+    exit;
+}
+
+$stmt = $conn->prepare("
+    SELECT entry_id, dict_id, lang_1, lang_2, lang_3, pronunciation,
+           part_of_speech, example, notes, is_active, created_at
+    FROM dictionary_entries
+    WHERE dict_id = ?
+    ORDER BY created_at DESC
+");
+$stmt->execute([$dict_id]);
+$entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+require_once __DIR__ . '/../../includes/header.php';
+?>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+<style>
+    .container { width: 90%; max-width: 1200px; margin: 30px auto; }
+    .top-links { margin-bottom: 20px; }
+    .top-links a { text-decoration: none; margin-right: 15px; color: #007bff; font-weight: bold; }
+    .message-success { color: green; font-weight: bold; margin-bottom: 15px; }
+    .message-error   { color: red;   font-weight: bold; margin-bottom: 15px; }
+    .add-form { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    .add-form input, .add-form textarea { width: 100%; max-width: 500px; padding: 8px; margin-top: 5px; margin-bottom: 15px; }
+    .add-form button { background: #007bff; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+    .checkbox-row input[type="checkbox"] { width: auto; margin: 0; }
+    table { background: white; }
+    body.dark { background: #121212; color: white; }
+    body.dark .add-form { background: #1e1e1e; color: white; }
+    body.dark .add-form input, body.dark .add-form textarea { background: #2d2d2d; color: white; border: 1px solid #444; }
+    body.dark table { background: #1e1e1e; color: white; }
+    body.dark th { background: #2d2d2d; color: white; }
+    body.dark td { border-color: #444; color: white; }
+    body.dark .top-links a { color: #60a5fa; }
+</style>
+
+<div class="container">
+    <h1>Manage Entries</h1>
+    <h3>Dictionary: <?php echo htmlspecialchars($dictionary['name']); ?></h3>
+
+    <div class="top-links">
+        <a href="manage_dictionaries.php">← Back to Manage Dictionaries</a>
+        <a href="dashboard.php">Dashboard</a>
+        <a href="logout.php">Logout</a>
+    </div>
+
+    <?php if (isset($_GET['success'])): ?>
+        <p class="message-success"><?php echo htmlspecialchars($_GET['success']); ?></p>
+    <?php endif; ?>
+    <?php if (isset($_GET['error'])): ?>
+        <p class="message-error"><?php echo htmlspecialchars($_GET['error']); ?></p>
+    <?php endif; ?>
+
+    <h2>Add New Entry</h2>
+
+    <form action="entry_create.php" method="POST" class="add-form">
+        <input type="hidden" name="dict_id" value="<?php echo $dictionary['dict_id']; ?>">
+
+        <label>Language 1:</label><br>
+        <input type="text" name="lang_1" required><br>
+
+        <label>Language 2:</label><br>
+        <input type="text" name="lang_2"><br>
+
+        <label>Language 3:</label><br>
+        <input type="text" name="lang_3"><br>
+
+        <label>Pronunciation:</label><br>
+        <input type="text" name="pronunciation"><br>
+
+        <label>Part of Speech:</label><br>
+        <input type="text" name="part_of_speech"><br>
+
+        <label>Example:</label><br>
+        <textarea name="example" rows="3"></textarea><br>
+
+        <label>Notes:</label><br>
+        <textarea name="notes" rows="3"></textarea><br>
+
+        <div class="checkbox-row">
+            <input type="checkbox" name="is_active" value="1" checked>
+            <label style="margin: 0;">Active</label>
+        </div>
+
+        <button type="submit">Add Entry</button>
+    </form>
+
+    <table id="entriesTable" class="display">
+        <thead>
+            <tr>
+                <th>Entry ID</th><th>Language 1</th><th>Language 2</th><th>Language 3</th>
+                <th>Pronunciation</th><th>Part of Speech</th><th>Example</th>
+                <th>Notes</th><th>Active</th><th>Created At</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($entries as $row): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($row['entry_id']); ?></td>
+                    <td><?php echo htmlspecialchars($row['lang_1'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($row['lang_2'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($row['lang_3'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($row['pronunciation'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($row['part_of_speech'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($row['example'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($row['notes'] ?? ''); ?></td>
+                    <td><?php echo !empty($row['is_active']) ? 'Yes' : 'No'; ?></td>
+                    <td><?php echo htmlspecialchars($row['created_at'] ?? ''); ?></td>
+                    <td>
+                        <a href="entry_update.php?id=<?php echo $row['entry_id']; ?>&dict_id=<?php echo $row['dict_id']; ?>">Edit</a> |
+                        <a href="entry_delete.php?id=<?php echo $row['entry_id']; ?>&dict_id=<?php echo $row['dict_id']; ?>"
+                           onclick="return confirm('Are you sure you want to delete this entry?');">Delete</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    $(document).ready(function () { $('#entriesTable').DataTable(); });
+</script>
+
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
