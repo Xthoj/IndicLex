@@ -20,6 +20,7 @@ require_once __DIR__ . '/../config/app.php';
 <header class="sticky-bg">
   <nav>
     <div class="nav-links">
+
         <i class="fa fa-bars" onclick="toggleMenu()"></i>
         <a href="<?= BASE_URL ?>/public/index.php" class="hero-link">IndicLex</a>
 
@@ -29,6 +30,35 @@ require_once __DIR__ . '/../config/app.php';
                 <li><a href="<?= BASE_URL ?>/public/search.php">Search</a></li>
                 <li><a href="<?= BASE_URL ?>/public/preferences.php">Preferences</a></li>
 
+                <li><a href="<?= BASE_URL ?>/public/compare.php">Compare</a></li>
+                <li><a href="<?= BASE_URL ?>/public/validation.php">Validation</a></li>
+                <li><a href="<?= BASE_URL ?>/public/reports.php">Reports</a></li>
+
+                <?php if (isset($_SESSION['admin_id'])): ?>
+                    <li><a href="<?= BASE_URL ?>/public/admin/dashboard.php">Dashboard</a></li>
+                <?php else: ?>
+                    <li><a href="<?= BASE_URL ?>/public/admin/login.php">Login</a></li>
+                <?php endif; ?>
+            </ul>
+        </div>
+
+        <div class="nav-right">
+            <label class="theme-switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+<nav>
+    <div class="nav-links">
+        <i class="fa fa-bars" onclick="toggleMenu()"></i>
+        <a href="<?= BASE_URL ?>/public/index.php" class="hero-link">IndicLex</a>
+
+        <div id="nav-links-sub">
+            <ul>
+                <li><a href="<?= BASE_URL ?>/public/catalog.php">Catalog</a></li>
+                <li><a href="<?= BASE_URL ?>/public/search.php">Search</a></li>
+                <li><a href="<?= BASE_URL ?>/public/preferences.php">Preferences</a></li>
                 <li><a href="<?= BASE_URL ?>/public/compare.php">Compare</a></li>
                 <li><a href="<?= BASE_URL ?>/public/validation.php">Validation</a></li>
                 <li><a href="<?= BASE_URL ?>/public/reports.php">Reports</a></li>
