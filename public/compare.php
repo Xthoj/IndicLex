@@ -1,5 +1,7 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/admin_auth.php';
+requireAdmin();
 require_once '../includes/header.php';
 
 // Load active dictionaries
@@ -14,113 +16,144 @@ $dictionaries = $dictStmt->fetchAll(PDO::FETCH_ASSOC);
 $dict_a = isset($_GET['dict_a']) ? (int)$_GET['dict_a'] : 0;
 $dict_b = isset($_GET['dict_b']) ? (int)$_GET['dict_b'] : 0;
 
-$shared_entries = [];
-$unique_a = [];
-$unique_b = [];
+$page_size    = 50;
+$page_shared  = isset($_GET['page_shared'])   ? max(1, (int)$_GET['page_shared'])   : 1;
+$page_uniq_a  = isset($_GET['page_uniq_a'])   ? max(1, (int)$_GET['page_uniq_a'])   : 1;
+$page_uniq_b  = isset($_GET['page_uniq_b'])   ? max(1, (int)$_GET['page_uniq_b'])   : 1;
+$page_overlap = isset($_GET['page_overlap'])  ? max(1, (int)$_GET['page_overlap'])  : 1;
+
+$shared_entries        = [];
+$unique_a              = [];
+$unique_b              = [];
 $overlapping_translations = [];
+
+$total_shared  = 0;
+$total_uniq_a  = 0;
+$total_uniq_b  = 0;
+$total_overlap = 0;
+
 $error = '';
+
+// Build a pagination URL preserving all current GET params
+function paginate_url(string $key, int $page): string {
+    $params = array_merge($_GET, [$key => $page]);
+    return 'compare.php?' . http_build_query($params);
+}
 
 if ($dict_a > 0 && $dict_b > 0) {
     if ($dict_a === $dict_b) {
         $error = 'Please select two different dictionaries.';
     } else {
-        // Shared entries based on lang_1 match
-        $sqlShared = "
-            SELECT
-                a.lang_1,
-                a.lang_2 AS dict_a_lang_2,
-                a.lang_3 AS dict_a_lang_3,
-                b.lang_2 AS dict_b_lang_2,
-                b.lang_3 AS dict_b_lang_3
+
+        // ── Shared entries ────────────────────────────────────────────────
+        $stmtCount = $conn->prepare("
+            SELECT COUNT(*) FROM dictionary_entries a
+            INNER JOIN dictionary_entries b ON a.lang_1 = b.lang_1
+            WHERE a.dict_id = :dict_a AND b.dict_id = :dict_b
+              AND a.is_active = 1 AND b.is_active = 1
+        ");
+        $stmtCount->execute([':dict_a' => $dict_a, ':dict_b' => $dict_b]);
+        $total_shared = (int)$stmtCount->fetchColumn();
+
+        $page_shared = min($page_shared, max(1, (int)ceil($total_shared / $page_size)));
+        $offset = ($page_shared - 1) * $page_size;
+
+        $stmtShared = $conn->prepare("
+            SELECT a.lang_1,
+                   a.lang_2 AS dict_a_lang_2, a.lang_3 AS dict_a_lang_3,
+                   b.lang_2 AS dict_b_lang_2, b.lang_3 AS dict_b_lang_3
             FROM dictionary_entries a
-            INNER JOIN dictionary_entries b
-                ON a.lang_1 = b.lang_1
-            WHERE a.dict_id = :dict_a
-              AND b.dict_id = :dict_b
-              AND a.is_active = 1
-              AND b.is_active = 1
+            INNER JOIN dictionary_entries b ON a.lang_1 = b.lang_1
+            WHERE a.dict_id = :dict_a AND b.dict_id = :dict_b
+              AND a.is_active = 1 AND b.is_active = 1
             ORDER BY a.lang_1 ASC
-        ";
-        $stmtShared = $conn->prepare($sqlShared);
-        $stmtShared->execute([
-            ':dict_a' => $dict_a,
-            ':dict_b' => $dict_b
-        ]);
+            LIMIT {$page_size} OFFSET {$offset}
+        ");
+        $stmtShared->execute([':dict_a' => $dict_a, ':dict_b' => $dict_b]);
         $shared_entries = $stmtShared->fetchAll(PDO::FETCH_ASSOC);
 
-        // Unique entries in Dictionary A
-        $sqlUniqueA = "
-            SELECT
-                a.lang_1,
-                a.lang_2,
-                a.lang_3
+        // ── Unique in A ───────────────────────────────────────────────────
+        $stmtCount = $conn->prepare("
+            SELECT COUNT(*) FROM dictionary_entries a
+            LEFT JOIN dictionary_entries b
+                ON a.lang_1 = b.lang_1 AND b.dict_id = :dict_b AND b.is_active = 1
+            WHERE a.dict_id = :dict_a AND a.is_active = 1 AND b.entry_id IS NULL
+        ");
+        $stmtCount->execute([':dict_a' => $dict_a, ':dict_b' => $dict_b]);
+        $total_uniq_a = (int)$stmtCount->fetchColumn();
+
+        $page_uniq_a = min($page_uniq_a, max(1, (int)ceil($total_uniq_a / $page_size)));
+        $offset = ($page_uniq_a - 1) * $page_size;
+
+        $stmtUniqueA = $conn->prepare("
+            SELECT a.lang_1, a.lang_2, a.lang_3
             FROM dictionary_entries a
             LEFT JOIN dictionary_entries b
-                ON a.lang_1 = b.lang_1
-               AND b.dict_id = :dict_b
-               AND b.is_active = 1
-            WHERE a.dict_id = :dict_a
-              AND a.is_active = 1
-              AND b.entry_id IS NULL
+                ON a.lang_1 = b.lang_1 AND b.dict_id = :dict_b AND b.is_active = 1
+            WHERE a.dict_id = :dict_a AND a.is_active = 1 AND b.entry_id IS NULL
             ORDER BY a.lang_1 ASC
-        ";
-        $stmtUniqueA = $conn->prepare($sqlUniqueA);
-        $stmtUniqueA->execute([
-            ':dict_a' => $dict_a,
-            ':dict_b' => $dict_b
-        ]);
+            LIMIT {$page_size} OFFSET {$offset}
+        ");
+        $stmtUniqueA->execute([':dict_a' => $dict_a, ':dict_b' => $dict_b]);
         $unique_a = $stmtUniqueA->fetchAll(PDO::FETCH_ASSOC);
 
-        // Unique entries in Dictionary B
-        $sqlUniqueB = "
-            SELECT
-                b.lang_1,
-                b.lang_2,
-                b.lang_3
+        // ── Unique in B ───────────────────────────────────────────────────
+        $stmtCount = $conn->prepare("
+            SELECT COUNT(*) FROM dictionary_entries b
+            LEFT JOIN dictionary_entries a
+                ON b.lang_1 = a.lang_1 AND a.dict_id = :dict_a AND a.is_active = 1
+            WHERE b.dict_id = :dict_b AND b.is_active = 1 AND a.entry_id IS NULL
+        ");
+        $stmtCount->execute([':dict_a' => $dict_a, ':dict_b' => $dict_b]);
+        $total_uniq_b = (int)$stmtCount->fetchColumn();
+
+        $page_uniq_b = min($page_uniq_b, max(1, (int)ceil($total_uniq_b / $page_size)));
+        $offset = ($page_uniq_b - 1) * $page_size;
+
+        $stmtUniqueB = $conn->prepare("
+            SELECT b.lang_1, b.lang_2, b.lang_3
             FROM dictionary_entries b
             LEFT JOIN dictionary_entries a
-                ON b.lang_1 = a.lang_1
-               AND a.dict_id = :dict_a
-               AND a.is_active = 1
-            WHERE b.dict_id = :dict_b
-              AND b.is_active = 1
-              AND a.entry_id IS NULL
+                ON b.lang_1 = a.lang_1 AND a.dict_id = :dict_a AND a.is_active = 1
+            WHERE b.dict_id = :dict_b AND b.is_active = 1 AND a.entry_id IS NULL
             ORDER BY b.lang_1 ASC
-        ";
-        $stmtUniqueB = $conn->prepare($sqlUniqueB);
-        $stmtUniqueB->execute([
-            ':dict_a' => $dict_a,
-            ':dict_b' => $dict_b
-        ]);
+            LIMIT {$page_size} OFFSET {$offset}
+        ");
+        $stmtUniqueB->execute([':dict_a' => $dict_a, ':dict_b' => $dict_b]);
         $unique_b = $stmtUniqueB->fetchAll(PDO::FETCH_ASSOC);
 
-        // Overlapping translations based on lang_2 or lang_3
-        $sqlOverlap = "
-            SELECT
-                a.lang_1 AS dict_a_word,
-                a.lang_2 AS dict_a_lang_2,
-                a.lang_3 AS dict_a_lang_3,
-                b.lang_1 AS dict_b_word,
-                b.lang_2 AS dict_b_lang_2,
-                b.lang_3 AS dict_b_lang_3
+        // ── Overlapping translations ───────────────────────────────────────
+        $stmtCount = $conn->prepare("
+            SELECT COUNT(*) FROM dictionary_entries a
+            INNER JOIN dictionary_entries b ON (
+                (a.lang_2 IS NOT NULL AND a.lang_2 <> '' AND a.lang_2 = b.lang_2)
+                OR
+                (a.lang_3 IS NOT NULL AND a.lang_3 <> '' AND a.lang_3 = b.lang_3)
+            )
+            WHERE a.dict_id = :dict_a AND b.dict_id = :dict_b
+              AND a.is_active = 1 AND b.is_active = 1
+        ");
+        $stmtCount->execute([':dict_a' => $dict_a, ':dict_b' => $dict_b]);
+        $total_overlap = (int)$stmtCount->fetchColumn();
+
+        $page_overlap = min($page_overlap, max(1, (int)ceil($total_overlap / $page_size)));
+        $offset = ($page_overlap - 1) * $page_size;
+
+        $stmtOverlap = $conn->prepare("
+            SELECT a.lang_1 AS dict_a_word, a.lang_2 AS dict_a_lang_2, a.lang_3 AS dict_a_lang_3,
+                   b.lang_1 AS dict_b_word, b.lang_2 AS dict_b_lang_2, b.lang_3 AS dict_b_lang_3
             FROM dictionary_entries a
-            INNER JOIN dictionary_entries b
-                ON (
-                    (a.lang_2 IS NOT NULL AND a.lang_2 <> '' AND a.lang_2 = b.lang_2)
-                    OR
-                    (a.lang_3 IS NOT NULL AND a.lang_3 <> '' AND a.lang_3 = b.lang_3)
-                )
-            WHERE a.dict_id = :dict_a
-              AND b.dict_id = :dict_b
-              AND a.is_active = 1
-              AND b.is_active = 1
+            INNER JOIN dictionary_entries b ON (
+                (a.lang_2 IS NOT NULL AND a.lang_2 <> '' AND a.lang_2 = b.lang_2)
+                OR
+                (a.lang_3 IS NOT NULL AND a.lang_3 <> '' AND a.lang_3 = b.lang_3)
+            )
+            WHERE a.dict_id = :dict_a AND b.dict_id = :dict_b
+              AND a.is_active = 1 AND b.is_active = 1
             ORDER BY a.lang_1 ASC
-        ";
-        $stmtOverlap = $conn->prepare($sqlOverlap);
-        $stmtOverlap->execute([
-            ':dict_a' => $dict_a,
-            ':dict_b' => $dict_b
-        ]);
+            LIMIT {$page_size} OFFSET {$offset}
+        ");
+        $stmtOverlap->execute([':dict_a' => $dict_a, ':dict_b' => $dict_b]);
         $overlapping_translations = $stmtOverlap->fetchAll(PDO::FETCH_ASSOC);
     }
 }
@@ -205,6 +238,44 @@ if ($dict_a > 0 && $dict_b > 0) {
     padding: 15px;
     min-width: 180px;
 }
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+.pagination a,
+.pagination span {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    color: #1f2937;
+    background: #fff;
+}
+.pagination a:hover {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+.pagination .current-page {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+    font-weight: bold;
+}
+.pagination .disabled {
+    color: #9ca3af;
+    cursor: default;
+    pointer-events: none;
+}
+.page-info {
+    color: #6b7280;
+    font-size: 0.88rem;
+    margin-top: 6px;
+}
 body.dark .compare-form,
 body.dark .result-table,
 body.dark .summary-box {
@@ -224,7 +295,53 @@ body.dark .compare-form select {
     color: #fff;
     border: 1px solid #374151;
 }
+body.dark .pagination a,
+body.dark .pagination span {
+    background: #1f2937;
+    color: #d1d5db;
+    border-color: #374151;
+}
+body.dark .pagination a:hover,
+body.dark .pagination .current-page {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+body.dark .page-info {
+    color: #9ca3af;
+}
 </style>
+
+<?php
+function render_pagination(int $current, int $total_pages, string $url_key): void {
+    if ($total_pages <= 1) return;
+
+    $window = 2;
+    echo '<div class="pagination">';
+
+    if ($current > 1) {
+        echo '<a href="' . htmlspecialchars(paginate_url($url_key, $current - 1)) . '">&laquo; Prev</a>';
+    } else {
+        echo '<span class="disabled">&laquo; Prev</span>';
+    }
+
+    for ($p = max(1, $current - $window); $p <= min($total_pages, $current + $window); $p++) {
+        if ($p === $current) {
+            echo '<span class="current-page">' . $p . '</span>';
+        } else {
+            echo '<a href="' . htmlspecialchars(paginate_url($url_key, $p)) . '">' . $p . '</a>';
+        }
+    }
+
+    if ($current < $total_pages) {
+        echo '<a href="' . htmlspecialchars(paginate_url($url_key, $current + 1)) . '">Next &raquo;</a>';
+    } else {
+        echo '<span class="disabled">Next &raquo;</span>';
+    }
+
+    echo '</div>';
+}
+?>
 
 <div class="container">
     <h1>Dictionary Comparison</h1>
@@ -269,27 +386,39 @@ body.dark .compare-form select {
     </form>
 
     <?php if ($dict_a > 0 && $dict_b > 0 && $error === ''): ?>
+        <?php
+        $pages_shared  = max(1, (int)ceil($total_shared  / $page_size));
+        $pages_uniq_a  = max(1, (int)ceil($total_uniq_a  / $page_size));
+        $pages_uniq_b  = max(1, (int)ceil($total_uniq_b  / $page_size));
+        $pages_overlap = max(1, (int)ceil($total_overlap / $page_size));
+        ?>
+
         <div class="summary-boxes">
             <div class="summary-box">
-                <strong>Shared Entries</strong><br>
-                <?php echo count($shared_entries); ?>
+                <strong>Shared Entries</strong>
+                <?php echo number_format($total_shared); ?>
             </div>
             <div class="summary-box">
-                <strong>Unique in Dictionary A</strong><br>
-                <?php echo count($unique_a); ?>
+                <strong>Unique in Dictionary A</strong>
+                <?php echo number_format($total_uniq_a); ?>
             </div>
             <div class="summary-box">
-                <strong>Unique in Dictionary B</strong><br>
-                <?php echo count($unique_b); ?>
+                <strong>Unique in Dictionary B</strong>
+                <?php echo number_format($total_uniq_b); ?>
             </div>
             <div class="summary-box">
-                <strong>Overlapping Translations</strong><br>
-                <?php echo count($overlapping_translations); ?>
+                <strong>Overlapping Translations</strong>
+                <?php echo number_format($total_overlap); ?>
             </div>
         </div>
 
+        <!-- Shared Entries -->
         <div class="section">
             <h2>Shared Entries</h2>
+            <p class="page-info">
+                Showing page <?php echo $page_shared; ?> of <?php echo $pages_shared; ?>
+                (<?php echo number_format($total_shared); ?> total)
+            </p>
             <table class="result-table">
                 <thead>
                     <tr>
@@ -316,10 +445,16 @@ body.dark .compare-form select {
                     <?php endif; ?>
                 </tbody>
             </table>
+            <?php render_pagination($page_shared, $pages_shared, 'page_shared'); ?>
         </div>
 
+        <!-- Unique in A -->
         <div class="section">
             <h2>Unique Entries in Dictionary A</h2>
+            <p class="page-info">
+                Showing page <?php echo $page_uniq_a; ?> of <?php echo $pages_uniq_a; ?>
+                (<?php echo number_format($total_uniq_a); ?> total)
+            </p>
             <table class="result-table">
                 <thead>
                     <tr>
@@ -342,10 +477,16 @@ body.dark .compare-form select {
                     <?php endif; ?>
                 </tbody>
             </table>
+            <?php render_pagination($page_uniq_a, $pages_uniq_a, 'page_uniq_a'); ?>
         </div>
 
+        <!-- Unique in B -->
         <div class="section">
             <h2>Unique Entries in Dictionary B</h2>
+            <p class="page-info">
+                Showing page <?php echo $page_uniq_b; ?> of <?php echo $pages_uniq_b; ?>
+                (<?php echo number_format($total_uniq_b); ?> total)
+            </p>
             <table class="result-table">
                 <thead>
                     <tr>
@@ -368,10 +509,16 @@ body.dark .compare-form select {
                     <?php endif; ?>
                 </tbody>
             </table>
+            <?php render_pagination($page_uniq_b, $pages_uniq_b, 'page_uniq_b'); ?>
         </div>
 
+        <!-- Overlapping Translations -->
         <div class="section">
             <h2>Overlapping Translations</h2>
+            <p class="page-info">
+                Showing page <?php echo $page_overlap; ?> of <?php echo $pages_overlap; ?>
+                (<?php echo number_format($total_overlap); ?> total)
+            </p>
             <table class="result-table">
                 <thead>
                     <tr>
@@ -396,6 +543,7 @@ body.dark .compare-form select {
                     <?php endif; ?>
                 </tbody>
             </table>
+            <?php render_pagination($page_overlap, $pages_overlap, 'page_overlap'); ?>
         </div>
     <?php endif; ?>
 </div>

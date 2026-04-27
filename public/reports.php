@@ -1,5 +1,7 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/admin_auth.php';
+requireAdmin();
 require_once '../includes/header.php';
 
 /*
@@ -311,6 +313,6 @@ const topBarLabels = <?php echo json_encode($topLabels); ?>;
 const topBarValues = <?php echo json_encode($topValues); ?>;
 </script>
 
-<script src="/IndicLex-admin-version/assets/js/charts.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/charts.js"></script>
 
 <?php require_once '../includes/footer.php'; ?>
