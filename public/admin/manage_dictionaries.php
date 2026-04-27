@@ -92,7 +92,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <table id="dictionaryTable" class="display">
         <thead>
             <tr>
-                <th>ID</th>
+                <th>#</th>
                 <th>Identifier</th>
                 <th>Name</th>
                 <th>Type</th>
@@ -105,9 +105,9 @@ require_once __DIR__ . '/../../includes/header.php';
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($dictionaries as $row): ?>
+            <?php foreach ($dictionaries as $i => $row): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($row['dict_id']); ?></td>
+                    <td><?php echo $i + 1; ?></td>
                     <td><?php echo htmlspecialchars($row['dict_identifier'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($row['name'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($row['type'] ?? ''); ?></td>
